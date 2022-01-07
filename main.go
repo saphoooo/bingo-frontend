@@ -6,8 +6,9 @@ import (
 	"sync"
 	"text/template"
 
-	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
+	muxtrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 type templateHandler struct {
@@ -23,11 +24,32 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.templ.Execute(w, r)
 }
 func main() {
-	r := mux.NewRouter()
-	r.Handle("/", &templateHandler{filename: "bingo.html"})
+	tracer.Start(
+		tracer.WithEnv("prod"),
+		tracer.WithService("bingo-frontend"),
+		tracer.WithServiceVersion("v1.0"),
+	)
+	defer tracer.Stop()
+	r := muxtrace.NewRouter()
+	r.Handle("/", loggingHandler(&templateHandler{filename: "bingo.html"}))
 	log.Print("Start listening on :8000...")
 	err := http.ListenAndServe(":8000", r)
 	if err != nil {
 		log.Panic().Msg(err.Error())
 	}
+}
+
+func loggingHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Info().
+			Str("hostname", r.Host).
+			Str("method", r.Method).
+			Str("proto", r.Proto).
+			Str("remote_ip", r.RemoteAddr).
+			Str("path", r.RequestURI).
+			Str("user-agent", r.UserAgent()).
+			Int("status", http.StatusOK).
+			Msg("")
+		next.ServeHTTP(w, r)
+	})
 }
