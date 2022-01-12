@@ -11,19 +11,8 @@
     </style>
   </head>
   <body>
-    <div class="container">
-      <h1>BingoBingo</h1>
-      <form action="/daily" method="POST">
-        <div class="form-group">
-          <label for="name">Enter your name</label>
-          <input type="text" id="name" name="name" class="form-control"><br>
-          <label for="number">Enter a number between 1 and 10</label>
-          <input type="text" id="number" name="number" class="form-control"><br>
-        </div>
-        <input type="submit" value="Bingo!" class="btn btn-primary" />
-      </form>
-    </div>
-
+    <div id="bingo"></div>
+    <script src="/src/bingo.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   </body>
 </html>

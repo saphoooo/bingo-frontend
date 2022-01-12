@@ -18,6 +18,10 @@ type templateHandler struct {
 }
 
 func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	span := tracer.StartSpan("bingo.try.request", tracer.ResourceName("/"))
+	defer span.Finish()
+	span.SetTag("http.url", r.URL.Path)
+
 	t.once.Do(func() {
 		t.templ = template.Must(template.ParseFiles(filepath.Join("templates", t.filename)))
 	})
@@ -32,6 +36,7 @@ func main() {
 	defer tracer.Stop()
 	r := muxtrace.NewRouter()
 	r.Handle("/", loggingHandler(&templateHandler{filename: "bingo.html"}))
+	r.PathPrefix("/src/").Handler(loggingHandler(http.StripPrefix("/src/", http.FileServer(http.Dir("./src")))))
 	log.Print("Start listening on :8000...")
 	err := http.ListenAndServe(":8000", r)
 	if err != nil {
